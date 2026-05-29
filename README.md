@@ -1,92 +1,64 @@
-# RPI to Arduino Communication
+# Raspberry Pi to Arduino Communication
 
-Project ทดสอบการเชื่อมต่อและรับส่งข้อมูลระหว่าง Raspberry Pi กับ Arduino ผ่าน Serial
+Serial communication between Raspberry Pi and Arduino using HC-SR04 ultrasonic sensor and SG90 servo motor. Object detected within 30cm triggers servo open/close.
 
-## Hardware
-
-- **Arduino UNO** (หรือ board ที่รองรับ)
-- **HC-SR04** Ultrasonic Sensor (วัดระยะทาง)
-- **Servo Motor** (SG90 หรืออื่นๆ)
-- **Raspberry Pi** (เชื่อมต่อ via USB)
-
-## Wiring
-
-| Arduino Pin | Component |
-|-------------|-----------|
-| Pin 9       | HC-SR04 Trig |
-| Pin 10      | HC-SR04 Echo |
-| Pin 6       | Servo Signal |
-
-## Circuit
+## Architecture
 
 ```
-HC-SR04 -> Arduino
----------------
-VCC      -> 5V
-GND      -> GND
-Trig     -> Pin 9
-Echo     -> Pin 10
-
-Servo -> Arduino
----------------
-VCC    -> 5V
-GND    -> GND
-Signal -> Pin 6
+HC-SR04 (Ultrasonic) ──→ Arduino UNO ──→ Serial USB ──→ Raspberry Pi
+                              │
+                              └──→ SG90 Servo (open/close)
 ```
 
-## How It Works
+## Features
 
-1. **Arduino** วัดระยะทางด้วย Ultrasonic Sensor ทุก 1 วินาที
-2. ถ้าระยะ < 30 cm → Servo หมุนไป 90° (เปิด)
-3. ถ้าระยะ >= 30 cm → Servo กลับไป 0° (ปิด)
-4. Arduino ส่งค่าระยะทางไปที่ Raspberry Pi ผ่าน Serial
+- Ultrasonic distance measurement every 1 second
+- Servo actuation based on 30cm threshold (open/close)
+- Serial data transmission from Arduino to Raspberry Pi
+- Graceful SIGINT handling in Python script
+- Configurable threshold, baud rate, and serial port
+
+## Tech Stack
+
+- Arduino C++ (Servo library)
+- Python 3 (pyserial)
+- HC-SR04 ultrasonic sensor, SG90 servo motor
+
+## Project Structure
+
+```
+rpi_to_arduino/
+├── arduino.ino     # Arduino sketch (sensor + servo + serial)
+├── rpi.py          # Python serial reader
+└── README.md
+```
+
+## Hardware Wiring
+
+| Component | Arduino Pin |
+|-----------|-------------|
+| HC-SR04 Trig | Pin 9 |
+| HC-SR04 Echo | Pin 10 |
+| SG90 Servo | Pin 6 |
 
 ## Setup
 
 ### Arduino
-1. เปิด Arduino IDE
-2. เปิดไฟล์ `arduino.ino`
-3. Upload ไปยัง Arduino
+
+1. Open `arduino.ino` in Arduino IDE
+2. Upload to Arduino UNO
+3. Connect HC-SR04 and servo per wiring table
 
 ### Raspberry Pi
-1. ติดตั้ง pyserial:
-   ```bash
-   pip install pyserial
-   ```
-2. รัน script:
-   ```bash
-   python3 rpi.py
-   ```
+
+```bash
+pip install pyserial
+python3 rpi.py
+```
 
 ## Configuration
 
-แก้ไขค่าใน `rpi.py`:
-
-```python
-SERIAL_PORT = '/dev/ttyUSB0'    # ปรับตาม port จริง
-BAUD_RATE = 9600
-DISTANCE_THRESHOLD_CM = 30
-```
-
-หา serial port:
-```bash
-ls -l /dev/ttyUSB*
-```
-
-## Output
-
-```
-Connected to Arduino on /dev/ttyUSB0 at 9600 baud
-Distance: 25 cm
-  -> Servo: OPEN (distance < 30 cm)
-Distance: 45 cm
-  -> Servo: CLOSED (distance >= 30 cm)
-```
-
-## Troubleshooting
-
-- **Permission denied**: เพิ่ม user เข้า group dialout
-  ```bash
-  sudo usermod -a -G dialout $USER
-  ```
-- **ไม่เจอ port**: ตรวจสอบ USB connection หรือ ใช้ `/dev/ttyACM0`
+In `rpi.py`:
+- `SERIAL_PORT`: defaults to `/dev/ttyUSB0`
+- `BAUD_RATE`: defaults to `9600`
+- `THRESHOLD_CM`: defaults to `30`
